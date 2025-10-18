@@ -5,6 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,62 +31,131 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun PantallaPrincipal() {
-    // Variable para contar clicks (temporal, para probar)
-    var contador by remember { mutableStateOf(0) }
+    // Lista temporal de gastos (luego vendrá de la base de datos)
+    var listaGastos by remember {
+        mutableStateOf(listOf(
+            Gasto(1, "Almuerzo", 5000.0, "Comida", "2025-10-18"),
+            Gasto(2, "Uber", 3500.0, "Transporte", "2025-10-18"),
+            Gasto(3, "Netflix", 9990.0, "Entretenimiento", "2025-10-17")
+        ))
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF5F5F5))
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Espaciado superior
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Título
-        Text(
-            text = "Mis Gastos",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF2C3E50)
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Botón para agregar gasto
-        Button(
-            onClick = { contador++ },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF27AE60)
-            ),
+        // Header con título y botón
+        Column(
             modifier = Modifier
-                .padding(horizontal = 24.dp)
-                .height(56.dp)
+                .fillMaxWidth()
+                .background(Color(0xFF2C3E50))
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "+ Agregar Gasto",
-                fontSize = 18.sp,
+                text = "Mis Gastos",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
                 color = Color.White
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = { /* Aquí irá la navegación */ },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF27AE60)
+                ),
+                modifier = Modifier.fillMaxWidth(0.7f)
+            ) {
+                Text(
+                    text = "+ Agregar Gasto",
+                    fontSize = 18.sp,
+                    color = Color.White
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Texto temporal
+        // Total gastado
         Text(
-            text = "Aquí aparecerán tus gastos",
-            fontSize = 16.sp,
-            color = Color(0xFF7F8C8D)
+            text = "Total gastado: $${listaGastos.sumOf { it.monto }}",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFFE74C3C),
+            modifier = Modifier.padding(16.dp)
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // Lista de gastos
+        if (listaGastos.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No hay gastos registrados",
+                    fontSize = 16.sp,
+                    color = Color(0xFF7F8C8D)
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(listaGastos) { gasto ->
+                    TarjetaGasto(gasto)
+                }
+            }
+        }
+    }
+}
 
-        // Contador de prueba
-        Text(
-            text = "Has presionado el botón: $contador veces",
-            fontSize = 14.sp,
-            color = Color(0xFF34495E)
-        )
+@Composable
+fun TarjetaGasto(gasto: Gasto) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = gasto.descripcion,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2C3E50)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = gasto.categoria,
+                    fontSize = 14.sp,
+                    color = Color(0xFF7F8C8D)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = gasto.fecha,
+                    fontSize = 12.sp,
+                    color = Color(0xFF95A5A6)
+                )
+            }
+
+            Text(
+                text = "$$${gasto.monto}",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFE74C3C)
+            )
+        }
     }
 }
