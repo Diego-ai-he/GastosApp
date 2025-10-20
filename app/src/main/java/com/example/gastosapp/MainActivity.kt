@@ -16,6 +16,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.gastosapp.ui.theme.GastosAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -23,15 +26,17 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             GastosAppTheme {
-                PantallaPrincipal()
+                AppNavigation()
             }
         }
     }
 }
 
 @Composable
-fun PantallaPrincipal() {
-    // Lista temporal de gastos (luego vendrá de la base de datos)
+fun AppNavigation() {
+    val navController = rememberNavController()
+
+    // Lista de gastos compartida entre pantallas
     var listaGastos by remember {
         mutableStateOf(listOf(
             Gasto(1, "Almuerzo", 5000.0, "Comida", "2025-10-18"),
@@ -40,6 +45,40 @@ fun PantallaPrincipal() {
         ))
     }
 
+    NavHost(
+        navController = navController,
+        startDestination = "principal"
+    ) {
+        // Pantalla Principal
+        composable("principal") {
+            PantallaPrincipal(
+                listaGastos = listaGastos,
+                onAgregarClick = {
+                    navController.navigate("agregar")
+                }
+            )
+        }
+
+        // Pantalla Agregar Gasto
+        composable("agregar") {
+            AgregarGastoScreen(
+                onGastoGuardado = { nuevoGasto ->
+                    listaGastos = listaGastos + nuevoGasto
+                    navController.popBackStack()
+                },
+                onVolver = {
+                    navController.popBackStack()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun PantallaPrincipal(
+    listaGastos: List<Gasto>,
+    onAgregarClick: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -63,7 +102,7 @@ fun PantallaPrincipal() {
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { /* Aquí irá la navegación */ },
+                onClick = onAgregarClick,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF27AE60)
                 ),
