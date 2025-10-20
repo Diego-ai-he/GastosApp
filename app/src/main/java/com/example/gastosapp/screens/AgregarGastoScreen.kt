@@ -1,4 +1,4 @@
-package com.example.gastosapp
+package com.example.gastosapp.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.gastosapp.model.Gasto
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

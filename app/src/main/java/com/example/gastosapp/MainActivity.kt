@@ -19,7 +19,10 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.gastosapp.model.Gasto
+import com.example.gastosapp.screens.AgregarGastoScreen
 import com.example.gastosapp.ui.theme.GastosAppTheme
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -1,4 +1,4 @@
-package com.example.gastosapp
+package com.example.gastosapp.model
 
 data class Gasto(
     val id: Int = 0,
