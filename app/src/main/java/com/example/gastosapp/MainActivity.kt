@@ -16,13 +16,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.gastosapp.model.Gasto
 import com.example.gastosapp.screens.AgregarGastoScreen
 import com.example.gastosapp.ui.theme.GastosAppTheme
-
+import com.example.gastosapp.viewmodel.GastosViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,15 +38,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
-
-    // Lista de gastos compartida entre pantallas
-    var listaGastos by remember {
-        mutableStateOf(listOf(
-            Gasto(1, "Almuerzo", 5000.0, "Comida", "2025-10-18"),
-            Gasto(2, "Uber", 3500.0, "Transporte", "2025-10-18"),
-            Gasto(3, "Netflix", 9990.0, "Entretenimiento", "2025-10-17")
-        ))
-    }
+    val viewModel: GastosViewModel = viewModel()  // ViewModel compartido
 
     NavHost(
         navController = navController,
@@ -55,7 +47,7 @@ fun AppNavigation() {
         // Pantalla Principal
         composable("principal") {
             PantallaPrincipal(
-                listaGastos = listaGastos,
+                viewModel = viewModel,
                 onAgregarClick = {
                     navController.navigate("agregar")
                 }
@@ -66,7 +58,7 @@ fun AppNavigation() {
         composable("agregar") {
             AgregarGastoScreen(
                 onGastoGuardado = { nuevoGasto ->
-                    listaGastos = listaGastos + nuevoGasto
+                    viewModel.agregarGasto(nuevoGasto)  // Usar el ViewModel
                     navController.popBackStack()
                 },
                 onVolver = {
@@ -79,9 +71,13 @@ fun AppNavigation() {
 
 @Composable
 fun PantallaPrincipal(
-    listaGastos: List<Gasto>,
+    viewModel: GastosViewModel,
     onAgregarClick: () -> Unit
 ) {
+    // Obtener datos del ViewModel
+    val listaGastos = viewModel.listaGastos
+    val totalGastado = viewModel.obtenerTotalGastado()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -121,7 +117,7 @@ fun PantallaPrincipal(
 
         // Total gastado
         Text(
-            text = "Total gastado: $${listaGastos.sumOf { it.monto }}",
+            text = "Total gastado: $$totalGastado",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFFE74C3C),
@@ -155,7 +151,7 @@ fun PantallaPrincipal(
 }
 
 @Composable
-fun TarjetaGasto(gasto: Gasto) {
+fun TarjetaGasto(gasto: com.example.gastosapp.model.Gasto) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
