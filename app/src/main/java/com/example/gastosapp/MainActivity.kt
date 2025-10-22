@@ -20,31 +20,39 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.gastosapp.data.GastosDatabase
+import com.example.gastosapp.repository.GastoRepository
 import com.example.gastosapp.screens.AgregarGastoScreen
 import com.example.gastosapp.ui.theme.GastosAppTheme
 import com.example.gastosapp.viewmodel.GastosViewModel
+import com.example.gastosapp.viewmodel.GastosViewModelFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Inicializar base de datos y repository
+        val database = GastosDatabase.getDatabase(applicationContext)
+        val repository = GastoRepository(database.gastoDao())
+        val viewModelFactory = GastosViewModelFactory(repository)
+
         setContent {
             GastosAppTheme {
-                AppNavigation()
+                AppNavigation(viewModelFactory = viewModelFactory)
             }
         }
     }
 }
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(viewModelFactory: GastosViewModelFactory) {
     val navController = rememberNavController()
-    val viewModel: GastosViewModel = viewModel()  // ViewModel compartido
+    val viewModel: GastosViewModel = viewModel(factory = viewModelFactory)
 
     NavHost(
         navController = navController,
         startDestination = "principal"
     ) {
-        // Pantalla Principal
         composable("principal") {
             PantallaPrincipal(
                 viewModel = viewModel,
@@ -54,11 +62,10 @@ fun AppNavigation() {
             )
         }
 
-        // Pantalla Agregar Gasto
         composable("agregar") {
             AgregarGastoScreen(
                 onGastoGuardado = { nuevoGasto ->
-                    viewModel.agregarGasto(nuevoGasto)  // Usar el ViewModel
+                    viewModel.agregarGasto(nuevoGasto)
                     navController.popBackStack()
                 },
                 onVolver = {
@@ -74,16 +81,15 @@ fun PantallaPrincipal(
     viewModel: GastosViewModel,
     onAgregarClick: () -> Unit
 ) {
-    // Obtener datos del ViewModel
-    val listaGastos = viewModel.listaGastos
-    val totalGastado = viewModel.obtenerTotalGastado()
+    // Observar datos desde el ViewModel
+    val listaGastos by viewModel.listaGastos.collectAsState()
+    val totalGastado by viewModel.totalGastado.collectAsState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF5F5F5))
     ) {
-        // Header con título y botón
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -115,25 +121,24 @@ fun PantallaPrincipal(
             }
         }
 
-        // Total gastado
         Text(
-            text = "Total gastado: $$totalGastado",
+            text = "Total gastado: $${"%.2f".format(totalGastado)}",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFFE74C3C),
             modifier = Modifier.padding(16.dp)
         )
 
-        // Lista de gastos
         if (listaGastos.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No hay gastos registrados",
+                    text = "No hay gastos registrados\n¡Agrega tu primer gasto!",
                     fontSize = 16.sp,
-                    color = Color(0xFF7F8C8D)
+                    color = Color(0xFF7F8C8D),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
         } else {
@@ -189,7 +194,7 @@ fun TarjetaGasto(gasto: com.example.gastosapp.model.Gasto) {
             }
 
             Text(
-                text = "$$${gasto.monto}",
+                text = "$${"%.2f".format(gasto.monto)}",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFFE74C3C)
