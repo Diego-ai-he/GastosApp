@@ -1,28 +1,35 @@
 package com.example.gastosapp.screens
 
-
+import android.net.Uri
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
 import com.example.gastosapp.model.Gasto
-
-
-
+import com.example.gastosapp.rememberCameraLauncher
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Add
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,24 +38,25 @@ fun AgregarGastoScreen(
     onGastoGuardado: (Gasto) -> Unit,
     onVolver: () -> Unit
 ) {
-    // Estados para cada campo
     var descripcion by remember { mutableStateOf("") }
     var monto by remember { mutableStateOf("") }
     var categoriaSeleccionada by remember { mutableStateOf("Comida") }
+    var fotoUri by remember { mutableStateOf<Uri?>(null) }
 
-    // Estados de validación
     var descripcionError by remember { mutableStateOf<String?>(null) }
     var montoError by remember { mutableStateOf<String?>(null) }
     var mostrarErrores by remember { mutableStateOf(false) }
 
-    // Lista de categorías
     val categorias = listOf("Comida", "Transporte", "Entretenimiento", "Salud", "Otros")
 
-    // Función de validación
+    // Camera launcher
+    val (takePicture, hasCameraPermission) = rememberCameraLauncher { uri ->
+        fotoUri = uri
+    }
+
     fun validarFormulario(): Boolean {
         var esValido = true
 
-        // Validar descripción
         descripcionError = when {
             descripcion.isBlank() -> {
                 esValido = false
@@ -65,7 +73,6 @@ fun AgregarGastoScreen(
             else -> null
         }
 
-        // Validar monto
         val montoDouble = monto.toDoubleOrNull()
         montoError = when {
             monto.isBlank() -> {
@@ -112,11 +119,12 @@ fun AgregarGastoScreen(
                     mostrarErrores = true
                     if (validarFormulario()) {
                         val nuevoGasto = Gasto(
-                            id = (1..10000).random(),
+                            id = 0,
                             descripcion = descripcion.trim(),
                             monto = monto.toDouble(),
                             categoria = categoriaSeleccionada,
-                            fecha = java.time.LocalDate.now().toString()
+                            fecha = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date()),
+                            fotoRecibo = fotoUri?.toString()
                         )
                         onGastoGuardado(nuevoGasto)
                     }
@@ -135,15 +143,13 @@ fun AgregarGastoScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // CAMPO DESCRIPCIÓN con validación visual
+            // CAMPO DESCRIPCIÓN
             Column {
                 OutlinedTextField(
                     value = descripcion,
                     onValueChange = {
                         descripcion = it
-                        if (mostrarErrores) {
-                            validarFormulario()
-                        }
+                        if (mostrarErrores) validarFormulario()
                     },
                     label = { Text("Descripción *") },
                     placeholder = { Text("Ej: Almuerzo en restaurante") },
@@ -153,33 +159,20 @@ fun AgregarGastoScreen(
                     trailingIcon = {
                         if (mostrarErrores) {
                             if (descripcionError != null) {
-                                Icon(
-                                    Icons.Filled.Close,
-                                    contentDescription = "Error",
-                                    tint = Color(0xFFE74C3C)
-                                )
+                                Icon(Icons.Filled.Close, "Error", tint = Color(0xFFE74C3C))
                             } else if (descripcion.isNotBlank()) {
-                                Icon(
-                                    Icons.Filled.Done,
-                                    contentDescription = "Correcto",
-                                    tint = Color(0xFF27AE60)
-                                )
+                                Icon(Icons.Filled.Done, "Correcto", tint = Color(0xFF27AE60))
                             }
                         }
                     },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = if (mostrarErrores && descripcionError != null)
-                            Color(0xFFE74C3C)
-                        else
-                            Color(0xFF3498DB),
+                            Color(0xFFE74C3C) else Color(0xFF3498DB),
                         unfocusedBorderColor = if (mostrarErrores && descripcionError != null)
-                            Color(0xFFE74C3C)
-                        else
-                            Color(0xFFBDC3C7)
+                            Color(0xFFE74C3C) else Color(0xFFBDC3C7)
                     )
                 )
 
-                // Mensaje de error
                 if (mostrarErrores && descripcionError != null) {
                     Text(
                         text = descripcionError!!,
@@ -189,7 +182,6 @@ fun AgregarGastoScreen(
                     )
                 }
 
-                // Contador de caracteres
                 Text(
                     text = "${descripcion.length}/50",
                     fontSize = 12.sp,
@@ -198,17 +190,14 @@ fun AgregarGastoScreen(
                 )
             }
 
-            // CAMPO MONTO con validación visual
+            // CAMPO MONTO
             Column {
                 OutlinedTextField(
                     value = monto,
                     onValueChange = {
-                        // Solo permitir números y punto decimal
                         if (it.isEmpty() || it.matches(Regex("^\\d*\\.?\\d*$"))) {
                             monto = it
-                            if (mostrarErrores) {
-                                validarFormulario()
-                            }
+                            if (mostrarErrores) validarFormulario()
                         }
                     },
                     label = { Text("Monto *") },
@@ -223,33 +212,20 @@ fun AgregarGastoScreen(
                     trailingIcon = {
                         if (mostrarErrores) {
                             if (montoError != null) {
-                                Icon(
-                                    Icons.Filled.Close,
-                                    contentDescription = "Error",
-                                    tint = Color(0xFFE74C3C)
-                                )
+                                Icon(Icons.Filled.Close, "Error", tint = Color(0xFFE74C3C))
                             } else if (monto.isNotBlank()) {
-                                Icon(
-                                    Icons.Filled.Done,
-                                    contentDescription = "Correcto",
-                                    tint = Color(0xFF27AE60)
-                                )
+                                Icon(Icons.Filled.Done, "Correcto", tint = Color(0xFF27AE60))
                             }
                         }
                     },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = if (mostrarErrores && montoError != null)
-                            Color(0xFFE74C3C)
-                        else
-                            Color(0xFF3498DB),
+                            Color(0xFFE74C3C) else Color(0xFF3498DB),
                         unfocusedBorderColor = if (mostrarErrores && montoError != null)
-                            Color(0xFFE74C3C)
-                        else
-                            Color(0xFFBDC3C7)
+                            Color(0xFFE74C3C) else Color(0xFFBDC3C7)
                     )
                 )
 
-                // Mensaje de error
                 if (mostrarErrores && montoError != null) {
                     Text(
                         text = montoError!!,
@@ -265,7 +241,7 @@ fun AgregarGastoScreen(
                 Text(
                     text = "Categoría *",
                     fontSize = 16.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    fontWeight = FontWeight.Bold,
                     color = Color(0xFF2C3E50)
                 )
 
@@ -277,7 +253,7 @@ fun AgregarGastoScreen(
                             .fillMaxWidth()
                             .padding(vertical = 4.dp),
                         horizontalArrangement = Arrangement.Start,
-                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
                             selected = categoriaSeleccionada == categoria,
@@ -287,11 +263,73 @@ fun AgregarGastoScreen(
                             )
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = categoria,
-                            fontSize = 16.sp,
-                            color = Color(0xFF2C3E50)
-                        )
+                        Text(text = categoria, fontSize = 16.sp, color = Color(0xFF2C3E50))
+                    }
+                }
+            }
+
+            // SECCIÓN DE FOTO
+            Column {
+                Text(
+                    text = "Foto del recibo (opcional)",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2C3E50)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = { takePicture() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF3498DB)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Filled.Add, "Tomar foto", modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(if (fotoUri == null) "Tomar Foto" else "Cambiar Foto")
+                }
+
+                // Mostrar preview de la foto
+                fotoUri?.let { uri ->
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            Image(
+                                painter = rememberAsyncImagePainter(uri),
+                                contentDescription = "Foto del recibo",
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(12.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+
+                            // Botón para eliminar foto
+                            IconButton(
+                                onClick = { fotoUri = null },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Filled.Delete,
+                                    "Eliminar foto",
+                                    tint = Color.White,
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .border(2.dp, Color.White, RoundedCornerShape(50))
+                                        .padding(4.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }

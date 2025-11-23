@@ -26,6 +26,11 @@ import com.example.gastosapp.screens.AgregarGastoScreen
 import com.example.gastosapp.ui.theme.GastosAppTheme
 import com.example.gastosapp.viewmodel.GastosViewModel
 import com.example.gastosapp.viewmodel.GastosViewModelFactory
+import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.rememberAsyncImagePainter
+import android.net.Uri
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -172,6 +177,22 @@ fun TarjetaGasto(gasto: com.example.gastosapp.model.Gasto) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Foto del recibo (si existe)
+            gasto.fotoRecibo?.let { fotoUri ->
+                androidx.compose.foundation.Image(
+                    painter = coil.compose.rememberAsyncImagePainter(
+                        model = android.net.Uri.parse(fotoUri)
+                    ),
+                    contentDescription = "Foto del recibo",
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+            }
+
+            // Información del gasto
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = gasto.descripcion,
@@ -193,6 +214,7 @@ fun TarjetaGasto(gasto: com.example.gastosapp.model.Gasto) {
                 )
             }
 
+            // Monto
             Text(
                 text = "$${"%.2f".format(gasto.monto)}",
                 fontSize = 20.sp,
