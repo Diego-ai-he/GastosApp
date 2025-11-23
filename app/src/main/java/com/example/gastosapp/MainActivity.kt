@@ -1,5 +1,15 @@
 package com.example.gastosapp
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -54,9 +64,41 @@ fun AppNavigation(viewModelFactory: GastosViewModelFactory) {
     val navController = rememberNavController()
     val viewModel: GastosViewModel = viewModel(factory = viewModelFactory)
 
-    NavHost(
+    androidx.navigation.compose.NavHost(
         navController = navController,
-        startDestination = "principal"
+        startDestination = "principal",
+        enterTransition = {
+            androidx.compose.animation.slideInHorizontally(
+                initialOffsetX = { it },
+                animationSpec = androidx.compose.animation.core.tween(300)
+            ) + androidx.compose.animation.fadeIn(
+                animationSpec = androidx.compose.animation.core.tween(300)
+            )
+        },
+        exitTransition = {
+            androidx.compose.animation.slideOutHorizontally(
+                targetOffsetX = { -it / 3 },
+                animationSpec = androidx.compose.animation.core.tween(300)
+            ) + androidx.compose.animation.fadeOut(
+                animationSpec = androidx.compose.animation.core.tween(300)
+            )
+        },
+        popEnterTransition = {
+            androidx.compose.animation.slideInHorizontally(
+                initialOffsetX = { -it / 3 },
+                animationSpec = androidx.compose.animation.core.tween(300)
+            ) + androidx.compose.animation.fadeIn(
+                animationSpec = androidx.compose.animation.core.tween(300)
+            )
+        },
+        popExitTransition = {
+            androidx.compose.animation.slideOutHorizontally(
+                targetOffsetX = { it },
+                animationSpec = androidx.compose.animation.core.tween(300)
+            ) + androidx.compose.animation.fadeOut(
+                animationSpec = androidx.compose.animation.core.tween(300)
+            )
+        }
     ) {
         composable("principal") {
             PantallaPrincipal(
@@ -126,8 +168,17 @@ fun PantallaPrincipal(
             }
         }
 
+        val animatedTotal by androidx.compose.animation.core.animateFloatAsState(
+            targetValue = totalGastado.toFloat(),
+            animationSpec = androidx.compose.animation.core.tween(
+                durationMillis = 600,
+                easing = androidx.compose.animation.core.FastOutSlowInEasing
+            ),
+            label = "total"
+        )
+
         Text(
-            text = "Total gastado: $${"%.2f".format(totalGastado)}",
+            text = "Total gastado: $${"%.2f".format(animatedTotal)}",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFFE74C3C),
@@ -152,8 +203,22 @@ fun PantallaPrincipal(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(listaGastos) { gasto ->
-                    TarjetaGasto(gasto)
+                items(
+                    items = listaGastos,
+                    key = { it.id }  // ← Importante para animaciones
+                ) { gasto ->
+                    // Animación de aparición
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = true,
+                        enter = androidx.compose.animation.fadeIn(
+                            animationSpec = androidx.compose.animation.core.tween(300)
+                        ) + androidx.compose.animation.slideInVertically(
+                            initialOffsetY = { it / 2 },
+                            animationSpec = androidx.compose.animation.core.tween(300)
+                        )
+                    ) {
+                        TarjetaGasto(gasto)
+                    }
                 }
             }
         }

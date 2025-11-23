@@ -1,5 +1,11 @@
 package com.example.gastosapp.screens
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -114,8 +120,27 @@ fun AgregarGastoScreen(
             )
         },
         floatingActionButton = {
+            var isPressed by remember { mutableStateOf(false) }
+            val scale by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = if (isPressed) 0.85f else 1f,
+                animationSpec = androidx.compose.animation.core.spring(
+                    dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+                    stiffness = androidx.compose.animation.core.Spring.StiffnessLow
+                ),
+                label = "scale"
+            )
+
+            // Resetear después de presionar
+            LaunchedEffect(isPressed) {
+                if (isPressed) {
+                    kotlinx.coroutines.delay(200)
+                    isPressed = false
+                }
+            }
+
             FloatingActionButton(
                 onClick = {
+                    isPressed = true
                     mostrarErrores = true
                     if (validarFormulario()) {
                         val nuevoGasto = Gasto(
@@ -129,7 +154,11 @@ fun AgregarGastoScreen(
                         onGastoGuardado(nuevoGasto)
                     }
                 },
-                containerColor = Color(0xFF27AE60)
+                containerColor = Color(0xFF27AE60),
+                modifier = Modifier.graphicsLayer(
+                    scaleX = scale,
+                    scaleY = scale
+                )
             ) {
                 Icon(Icons.Filled.Check, "Guardar", tint = Color.White)
             }
